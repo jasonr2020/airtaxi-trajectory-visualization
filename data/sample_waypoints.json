@@ -1,0 +1,17 @@
+{
+  "name": "DTW Test Case 1",
+  "preset": "joby_s4",
+  "ground_elevation_ft": 650,
+  "waypoints": [
+    { "name": "WP0_Takeoff", "latitude": 42.32166038751888, "longitude": -83.13542657133581, "altitude_ft": 0 },
+    { "name": "WP1", "latitude": 42.31860368453305, "longitude": -83.14804846939745, "altitude_ft": 500 },
+    { "name": "WP2", "latitude": 42.316917, "longitude": -83.167214, "altitude_ft": 1500 },
+    { "name": "WP3", "latitude": 42.309774, "longitude": -83.21431, "altitude_ft": 1500 },
+    { "name": "WP4", "latitude": 42.306385, "longitude": -83.238092, "altitude_ft": 1500 },
+    { "name": "WP5", "latitude": 42.29708473129715, "longitude": -83.27581260255113, "altitude_ft": 1500 },
+    { "name": "WP6", "latitude": 42.294245146828, "longitude": -83.29128417156224, "altitude_ft": 1500 },
+    { "name": "WP7_Hold", "latitude": 42.24472555440853, "longitude": -83.32862816837518, "altitude_ft": 1000, "is_holding": true, "hold_time_s": 10 },
+    { "name": "WP8", "latitude": 42.21989670694282, "longitude": -83.34910116400103, "altitude_ft": 500 },
+    { "name": "WP9_Landing", "latitude": 42.21326418424547, "longitude": -83.35919063512829, "altitude_ft": 0 }
+  ]
+}

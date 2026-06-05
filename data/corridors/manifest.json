@@ -1,0 +1,36 @@
+{
+  "flows": [
+    {
+      "id": "south_flow",
+      "label": "South Flow",
+      "file": "south_flow.geojson",
+      "available": true,
+      "corridors": [
+        "22R",
+        "22L",
+        "21L"
+      ]
+    },
+    {
+      "id": "north_flow",
+      "label": "North Flow",
+      "file": "north_flow.geojson",
+      "available": true,
+      "corridors": [
+        "04L",
+        "04R",
+        "03R"
+      ]
+    },
+    {
+      "id": "west_flow",
+      "label": "West Flow",
+      "file": "west_flow.geojson",
+      "available": true,
+      "corridors": [
+        "27R",
+        "27L"
+      ]
+    }
+  ]
+}
