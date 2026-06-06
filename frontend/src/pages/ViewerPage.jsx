@@ -6,6 +6,7 @@ import CesiumViewer from "../components/CesiumViewer.jsx";
 import TrajectoryMap from "../components/TrajectoryMap.jsx";
 import ProfileCharts from "../components/ProfileCharts.jsx";
 import { getCorridor, getCorridors, simulate } from "../api/client.js";
+import { BUILTIN_ROUTES } from "../data/routes.js";
 
 // Draw the altitude colour legend onto the captured map canvas (matches the
 // on-screen legend; leaflet-image doesn't capture HTML overlays).
@@ -182,6 +183,22 @@ export default function ViewerPage() {
               Import route JSON…
             </button>
             <input ref={fileRef} type="file" accept=".json" hidden onChange={importJSON} />
+            <label className="field" style={{ marginTop: 10 }}>
+              <span className="field-label">Or run a built-in route</span>
+              <select
+                className="select"
+                value=""
+                onChange={(e) => {
+                  const r = BUILTIN_ROUTES.find((x) => x.id === e.target.value);
+                  if (r) runRoute(r.route);
+                }}
+              >
+                <option value="">Choose an example route…</option>
+                {BUILTIN_ROUTES.map((r) => (
+                  <option key={r.id} value={r.id}>{r.label}</option>
+                ))}
+              </select>
+            </label>
             {status.state === "running" && <p className="hint">Running simulation…</p>}
             {status.state === "error" && (
               <div className="status status-warn" style={{ marginTop: 10 }}>{status.message}</div>

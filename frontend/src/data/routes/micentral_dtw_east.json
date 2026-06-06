@@ -1,0 +1,27 @@
+{
+  "name": "MI Central to DTW (East Hold)",
+  "preset": "joby_s4",
+  "physics": {
+    "cruise_speed_kt": 90,
+    "climb_rate_fpm": 492,
+    "max_accel_g": 0.15,
+    "max_decel_g": 0.1,
+    "max_yaw_rate_deg": 3
+  },
+  "ground_elevation_ft": 650,
+  "waypoints": [
+    { "name": "Michigan Central Station", "latitude": 42.329655, "longitude": -83.076707, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP2", "latitude": 42.31755866357688, "longitude": -83.08238983154298, "altitude_ft": 1000, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP3", "latitude": 42.28302404768284, "longitude": -83.1574058532715, "altitude_ft": 1500, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP4", "latitude": 42.27400637996398, "longitude": -83.19379806518556, "altitude_ft": 1500, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP5", "latitude": 42.26689294300924, "longitude": -83.22555541992189, "altitude_ft": 1000, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP6", "latitude": 42.26536853064819, "longitude": -83.27070236206056, "altitude_ft": 1000, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP7", "latitude": 42.218347726793304, "longitude": -83.26915740966798, "altitude_ft": 1000, "is_holding": true, "hold_time_s": 10 },
+    { "name": "East Holding Point", "latitude": 42.216532, "longitude": -83.323965, "altitude_ft": 30, "is_holding": true, "hold_time_s": 10 },
+    { "name": "WP9", "latitude": 42.217116137042765, "longitude": -83.35652232170106, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP10", "latitude": 42.2170525704683, "longitude": -83.35771322250368, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP11", "latitude": 42.21569381963824, "longitude": -83.35866808891296, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP12", "latitude": 42.215209111975405, "longitude": -83.35745573043825, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 },
+    { "name": "DTW Concourse C", "latitude": 42.213632, "longitude": -83.358728, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 }
+  ]
+}

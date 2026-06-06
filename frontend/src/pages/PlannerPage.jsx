@@ -5,6 +5,7 @@ import WaypointList from "../components/WaypointList.jsx";
 import VehiclePanel from "../components/VehiclePanel.jsx";
 import { getCorridor, getCorridors, getPresets, simulate } from "../api/client.js";
 import { DEFAULT_HOLDING_ALT_FT, SITES } from "../data/sites.js";
+import { BUILTIN_ROUTES } from "../data/routes.js";
 
 let nextId = 1;
 
@@ -184,34 +185,38 @@ export default function PlannerPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Load a route payload (from a file import or a built-in example) into the editor.
+  const loadRoute = (data) => {
+    setRouteName(data.name ?? "Imported route");
+    if (data.ground_elevation_ft != null) setGroundFt(data.ground_elevation_ft);
+    lastTouchedRef.current = null; // loaded as a whole; no single culprit
+    setWaypoints(
+      (data.waypoints ?? []).map((w, i) => ({
+        id: nextId++,
+        name: w.name ?? `WP${i}`,
+        lat: w.latitude,
+        lon: w.longitude,
+        altitude_ft: w.altitude_ft ?? 500,
+        is_holding: !!w.is_holding,
+        hold_time_s: w.hold_time_s ?? 10,
+      })),
+    );
+    if (presets && data.preset && presets[data.preset]) {
+      setVehicle({
+        preset: data.preset,
+        values: { ...presets[data.preset].values, ...(data.physics ?? {}) },
+      });
+    }
+    setStatus({ state: "idle" });
+  };
+
   const importJSON = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const data = JSON.parse(reader.result);
-        setRouteName(data.name ?? "Imported route");
-        if (data.ground_elevation_ft != null) setGroundFt(data.ground_elevation_ft);
-        lastTouchedRef.current = null; // imported as a whole; no single culprit
-        setWaypoints(
-          (data.waypoints ?? []).map((w, i) => ({
-            id: nextId++,
-            name: w.name ?? `WP${i}`,
-            lat: w.latitude,
-            lon: w.longitude,
-            altitude_ft: w.altitude_ft ?? 500,
-            is_holding: !!w.is_holding,
-            hold_time_s: w.hold_time_s ?? 10,
-          })),
-        );
-        if (presets && data.preset && presets[data.preset]) {
-          setVehicle({
-            preset: data.preset,
-            values: { ...presets[data.preset].values, ...(data.physics ?? {}) },
-          });
-        }
-        setStatus({ state: "idle" });
+        loadRoute(JSON.parse(reader.result));
       } catch {
         alert("Could not parse that file as a route JSON.");
       }
@@ -245,6 +250,23 @@ export default function PlannerPage() {
                 value={routeName}
                 onChange={(e) => setRouteName(e.target.value)}
               />
+            </label>
+
+            <label className="field">
+              <span className="field-label">Load a built-in route</span>
+              <select
+                className="select"
+                value=""
+                onChange={(e) => {
+                  const r = BUILTIN_ROUTES.find((x) => x.id === e.target.value);
+                  if (r) loadRoute(r.route);
+                }}
+              >
+                <option value="">Choose an example route…</option>
+                {BUILTIN_ROUTES.map((r) => (
+                  <option key={r.id} value={r.id}>{r.label}</option>
+                ))}
+              </select>
             </label>
 
             <div className="field-row">

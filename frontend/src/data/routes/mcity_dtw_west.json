@@ -1,0 +1,25 @@
+{
+  "name": "MCity to DTW (West Hold)",
+  "preset": "joby_s4",
+  "physics": {
+    "cruise_speed_kt": 90,
+    "climb_rate_fpm": 492,
+    "max_accel_g": 0.15,
+    "max_decel_g": 0.1,
+    "max_yaw_rate_deg": 3
+  },
+  "ground_elevation_ft": 650,
+  "waypoints": [
+    { "name": "MCity – University of Michigan", "latitude": 42.298068, "longitude": -83.700864, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP2", "latitude": 42.28318279787866, "longitude": -83.71017694473268, "altitude_ft": 100, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP3", "latitude": 42.2727996927362, "longitude": -83.69419097900392, "altitude_ft": 200, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP4", "latitude": 42.269306520526854, "longitude": -83.6763381958008, "altitude_ft": 300, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP5", "latitude": 42.271688249850406, "longitude": -83.64968776702882, "altitude_ft": 400, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP6", "latitude": 42.27565759873183, "longitude": -83.60544204711915, "altitude_ft": 500, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP7", "latitude": 42.27680072484333, "longitude": -83.55051040649415, "altitude_ft": 1000, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP8", "latitude": 42.23919370410209, "longitude": -83.51892471313478, "altitude_ft": 1000, "is_holding": false, "hold_time_s": 10 },
+    { "name": "WP9", "latitude": 42.23423705289563, "longitude": -83.44322204589845, "altitude_ft": 1000, "is_holding": true, "hold_time_s": 10 },
+    { "name": "Northeast Holding Point", "latitude": 42.22711, "longitude": -83.373156, "altitude_ft": 30, "is_holding": true, "hold_time_s": 10 },
+    { "name": "DTW Concourse C", "latitude": 42.213632, "longitude": -83.358728, "altitude_ft": 0, "is_holding": false, "hold_time_s": 10 }
+  ]
+}
