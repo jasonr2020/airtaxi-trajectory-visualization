@@ -14,6 +14,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { SITES } from "../data/sites.js";
+import BravoAirspace from "./BravoAirspace.jsx";
 
 const DTW_CENTER = [42.25, -83.34];
 
@@ -48,7 +49,7 @@ function ClickToAdd({ onAdd }) {
   return null;
 }
 
-export default function PlannerMap({ waypoints, corridor, onAdd, onMove, onUseSite }) {
+export default function PlannerMap({ waypoints, corridor, onAdd, onMove, onUseSite, groundFt = 650 }) {
   // For the 2D map, only show the ground footprint (Bottom) + centerline.
   const corridor2d = useMemo(() => {
     if (!corridor) return null;
@@ -84,6 +85,8 @@ export default function PlannerMap({ waypoints, corridor, onAdd, onMove, onUseSi
           />
         </LayersControl.BaseLayer>
       </LayersControl>
+
+      <BravoAirspace groundFt={groundFt} />
 
       {corridor2d && (
         <GeoJSON

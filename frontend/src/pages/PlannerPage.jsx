@@ -19,6 +19,8 @@ export default function PlannerPage() {
   const [corridor, setCorridor] = useState(null);
   const [status, setStatus] = useState({ state: "idle" });
   const fileRef = useRef(null);
+  const lastTouchedRef = useRef(null); // id of the waypoint most recently added/edited
+  const validateSeq = useRef(0);       // guards against out-of-order async validations
 
   // Load presets + corridor flow manifest once.
   useEffect(() => {
@@ -45,11 +47,12 @@ export default function PlannerPage() {
 
   // ── Waypoint operations ──────────────────────────────────────────
   const addWaypoint = (lat, lon) => {
-    setStatus({ state: "idle" });
+    const id = nextId++;
+    lastTouchedRef.current = id;
     setWaypoints((ws) => [
       ...ws,
       {
-        id: nextId++,
+        id,
         name: `WP${ws.length}`,
         lat,
         lon,
@@ -60,16 +63,23 @@ export default function PlannerPage() {
     ]);
   };
 
-  const moveWaypoint = (id, lat, lon) =>
+  const moveWaypoint = (id, lat, lon) => {
+    lastTouchedRef.current = id;
     setWaypoints((ws) => ws.map((w) => (w.id === id ? { ...w, lat, lon } : w)));
+  };
 
-  const updateWaypoint = (id, patch) =>
+  const updateWaypoint = (id, patch) => {
+    lastTouchedRef.current = id;
     setWaypoints((ws) => ws.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+  };
 
-  const deleteWaypoint = (id) =>
+  const deleteWaypoint = (id) => {
+    lastTouchedRef.current = null; // a removal has no single "culprit" point
     setWaypoints((ws) => ws.filter((w) => w.id !== id));
+  };
 
-  const reorder = (id, dir) =>
+  const reorder = (id, dir) => {
+    lastTouchedRef.current = null;
     setWaypoints((ws) => {
       const i = ws.findIndex((w) => w.id === id);
       const j = i + dir;
@@ -78,17 +88,19 @@ export default function PlannerPage() {
       [copy[i], copy[j]] = [copy[j], copy[i]];
       return copy;
     });
+  };
 
   const clearAll = () => {
+    lastTouchedRef.current = null;
     setWaypoints([]);
-    setStatus({ state: "idle" });
   };
 
   // Add a predefined site as a waypoint (append, or prepend as the start).
   const useSite = (site, asStart) => {
-    setStatus({ state: "idle" });
+    const id = nextId++;
+    lastTouchedRef.current = id;
     const wp = {
-      id: nextId++,
+      id,
       name: site.name,
       lat: site.lat,
       lon: site.lon,
@@ -100,12 +112,12 @@ export default function PlannerPage() {
   };
 
   // ── Build / download / validate route ────────────────────────────
-  const buildRoute = () => ({
+  const buildRoute = (list = waypoints) => ({
     name: routeName || "Route",
     preset: vehicle.preset,
     physics: vehicle.values,
     ground_elevation_ft: groundFt,
-    waypoints: waypoints.map((w, i) => ({
+    waypoints: list.map((w, i) => ({
       name: w.name || `WP${i}`,
       latitude: w.lat,
       longitude: w.lon,
@@ -114,6 +126,51 @@ export default function PlannerPage() {
       hold_time_s: w.hold_time_s,
     })),
   });
+
+  // Auto-validate (debounced) on every route change. The backend engine is the
+  // source of truth for "can this be flown". On failure we blame the waypoint the
+  // user most recently added/edited, and confirm it by re-simulating *without*
+  // that point: if the route then flies, the point is provably the culprit.
+  useEffect(() => {
+    if (waypoints.length < 2) {
+      setStatus({ state: "idle" });
+      return;
+    }
+    const seq = ++validateSeq.current;
+    setStatus({ state: "checking" });
+    const timer = setTimeout(async () => {
+      try {
+        const res = await simulate(buildRoute());
+        if (seq !== validateSeq.current) return; // a newer change superseded us
+        setStatus({ state: "ok", summary: res.summary });
+      } catch (e) {
+        if (seq !== validateSeq.current) return;
+        const culpritId = lastTouchedRef.current;
+        const culprit = waypoints.find((w) => w.id === culpritId);
+        let confirmed = false;
+        if (culprit && waypoints.length >= 3) {
+          try {
+            await simulate(buildRoute(waypoints.filter((w) => w.id !== culpritId)));
+            confirmed = true; // route flies once this point is removed
+          } catch {
+            /* still fails without it — the problem is broader than one point */
+          }
+        }
+        if (seq !== validateSeq.current) return;
+        setStatus({
+          state: "invalid",
+          message: e.message,
+          culpritId: culprit ? culpritId : null,
+          culpritName: culprit?.name,
+          confirmed,
+        });
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+    // buildRoute is intentionally omitted (recreated each render); routeName only
+    // affects the label, not flyability, so it is excluded too.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypoints, vehicle, groundFt]);
 
   const downloadJSON = () => {
     const blob = new Blob([JSON.stringify(buildRoute(), null, 2)], {
@@ -127,18 +184,6 @@ export default function PlannerPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Validate by running the backend engine; only download a converging route.
-  const handleExport = async () => {
-    setStatus({ state: "checking" });
-    try {
-      const res = await simulate(buildRoute());
-      setStatus({ state: "ok", summary: res.summary });
-      downloadJSON();
-    } catch (e) {
-      setStatus({ state: "warn", message: e.message });
-    }
-  };
-
   const importJSON = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -148,6 +193,7 @@ export default function PlannerPage() {
         const data = JSON.parse(reader.result);
         setRouteName(data.name ?? "Imported route");
         if (data.ground_elevation_ft != null) setGroundFt(data.ground_elevation_ft);
+        lastTouchedRef.current = null; // imported as a whole; no single culprit
         setWaypoints(
           (data.waypoints ?? []).map((w, i) => ({
             id: nextId++,
@@ -174,8 +220,6 @@ export default function PlannerPage() {
     e.target.value = "";
   };
 
-  const canExport = waypoints.length >= 2 && status.state !== "checking";
-
   return (
     <Workspace
       title="Planner"
@@ -188,6 +232,7 @@ export default function PlannerPage() {
           onAdd={addWaypoint}
           onMove={moveWaypoint}
           onUseSite={useSite}
+          groundFt={groundFt}
         />
       }
       side={
@@ -297,6 +342,7 @@ export default function PlannerPage() {
               onUpdate={updateWaypoint}
               onDelete={deleteWaypoint}
               onReorder={reorder}
+              invalidId={status.state === "invalid" ? status.culpritId : null}
             />
           </div>
 
@@ -304,23 +350,52 @@ export default function PlannerPage() {
 
           <button
             className="btn btn-primary"
-            disabled={!canExport}
-            onClick={handleExport}
-            title={waypoints.length < 2 ? "Add at least two waypoints" : ""}
+            disabled={status.state !== "ok"}
+            onClick={downloadJSON}
+            title={
+              waypoints.length < 2
+                ? "Add at least two waypoints"
+                : status.state === "checking"
+                  ? "Validating route…"
+                  : status.state === "invalid"
+                    ? "Fix the route before exporting"
+                    : ""
+            }
           >
-            {status.state === "checking" ? "Validating…" : "Validate & export JSON"}
+            Export JSON
           </button>
-
+        </>
+      }
+      belowMain={
+        <>
+          {status.state === "checking" && (
+            <div className="status status-checking">Validating route…</div>
+          )}
           {status.state === "ok" && (
             <div className="status status-ok">
               ✓ Route is valid — {status.summary.duration_s}s flight, max{" "}
-              {status.summary.max_ground_speed_kt} kt. JSON downloaded.
+              {status.summary.max_ground_speed_kt} kt.
             </div>
           )}
-          {status.state === "warn" && (
+          {status.state === "invalid" && (
             <div className="status status-warn">
-              <strong>⚠ Route couldn’t be simulated</strong>
-              <p>{status.message}</p>
+              {status.confirmed && status.culpritName ? (
+                <strong>⚠ “{status.culpritName}” breaks the route</strong>
+              ) : status.culpritName ? (
+                <strong>
+                  ⚠ Route can’t be simulated (last change: “{status.culpritName}”)
+                </strong>
+              ) : (
+                <strong>⚠ Route can’t be simulated</strong>
+              )}
+              <p>
+                {status.confirmed && status.culpritName
+                  ? "It simulates fine without that point — move it, change its altitude, or remove it. "
+                  : status.culpritName
+                    ? "Removing that point alone doesn’t fix it, so nearby points may be involved too. "
+                    : ""}
+                {status.message}
+              </p>
               <button className="btn btn-ghost btn-sm" onClick={downloadJSON}>
                 Export anyway
               </button>

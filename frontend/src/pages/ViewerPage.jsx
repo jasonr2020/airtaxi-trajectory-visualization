@@ -286,7 +286,7 @@ export default function ViewerPage() {
           <div className="viewer-bottom">
             <div className="panel viewer-map-panel">
               <h3 className="panel-title">2D top view (coloured by altitude)</h3>
-              <TrajectoryMap trajectory={result.trajectory} corridor={corridor} mapRef={trajMapRef} />
+              <TrajectoryMap trajectory={result.trajectory} corridor={corridor} mapRef={trajMapRef} groundFt={groundFt} />
             </div>
             <div className="panel">
               <h3 className="panel-title">Profiles</h3>

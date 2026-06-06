@@ -11,6 +11,7 @@ import {
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import BravoAirspace from "./BravoAirspace.jsx";
 
 // Simple blue→cyan→green→yellow ramp for altitude colouring.
 function ramp(tt) {
@@ -40,7 +41,7 @@ function FitBounds({ points }) {
   return null;
 }
 
-export default function TrajectoryMap({ trajectory, corridor, mapRef }) {
+export default function TrajectoryMap({ trajectory, corridor, mapRef, groundFt = 650 }) {
   // Downsample to ~200 coloured segments for performance.
   const { segs, lo, hi } = useMemo(() => {
     const n = trajectory.length;
@@ -112,6 +113,8 @@ export default function TrajectoryMap({ trajectory, corridor, mapRef }) {
           />
         </LayersControl.BaseLayer>
       </LayersControl>
+
+      <BravoAirspace groundFt={groundFt} />
 
       {corridor2d && (
         <GeoJSON

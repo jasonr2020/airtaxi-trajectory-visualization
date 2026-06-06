@@ -3,7 +3,7 @@
  * Each row: number, lat/lon, altitude (ft), holding checkbox + hold time,
  * reorder up/down, and delete.
  */
-export default function WaypointList({ waypoints, onUpdate, onDelete, onReorder }) {
+export default function WaypointList({ waypoints, onUpdate, onDelete, onReorder, invalidId }) {
   if (waypoints.length === 0) {
     return (
       <p className="muted">
@@ -16,9 +16,18 @@ export default function WaypointList({ waypoints, onUpdate, onDelete, onReorder 
   return (
     <ol className="wp-list">
       {waypoints.map((w, i) => (
-        <li className={`wp-row ${w.is_holding ? "wp-row-hold" : ""}`} key={w.id}>
+        <li
+          className={`wp-row ${w.is_holding ? "wp-row-hold" : ""} ${
+            w.id === invalidId ? "wp-row-bad" : ""
+          }`}
+          key={w.id}
+        >
           <div className="wp-row-head">
-            <span className={`wp-badge ${w.is_holding ? "wp-badge-hold" : ""}`}>
+            <span
+              className={`wp-badge ${w.is_holding ? "wp-badge-hold" : ""} ${
+                w.id === invalidId ? "wp-badge-bad" : ""
+              }`}
+            >
               {i + 1}
             </span>
             <span className="wp-coords">
