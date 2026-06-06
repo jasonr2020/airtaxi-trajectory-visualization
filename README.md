@@ -10,6 +10,27 @@ Choose one of the two methods below. Both serve the app at **http://localhost:51
 
 ---
 
+## Step 0 — Get the code (all methods)
+
+### Install Git
+
+**Mac:** Git is usually pre-installed. Open Terminal and run `git --version` to check. If not installed, run:
+
+```bash
+xcode-select --install
+```
+
+**Windows:** Download and install from https://git-scm.com/download/win — keep all default options during installation. After installing, use **Git Bash** (installed alongside Git) for all commands below.
+
+### Clone the repository
+
+```bash
+git clone https://github.com/jasonr2020/airtaxi-trajectory-visualization.git
+cd airtaxi-trajectory-visualization
+```
+
+---
+
 ## Method 1 — Local Python (for developers / teammates)
 
 ### Requirements
