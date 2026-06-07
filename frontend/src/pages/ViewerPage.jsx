@@ -106,50 +106,71 @@ export default function ViewerPage() {
 
   const downloadPDF = async () => {
     if (!result) return;
-    const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-    const W = pdf.internal.pageSize.getWidth();
-    const m = 40;
-    const cw = W - 2 * m;
-    let y = m;
+    try {
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      const W = pdf.internal.pageSize.getWidth();
+      const m = 40;
+      const cw = W - 2 * m;
+      let y = m;
 
-    pdf.setFontSize(16);
-    pdf.text(result.name || "Air-taxi trajectory", m, y);
-    y += 22;
-    pdf.setFontSize(10);
-    const s = result.summary;
-    const lines = [
-      `Start: ${s.start}   Landing: ${s.landing}   Duration: ${s.duration_s} s`,
-      `Waypoints: ${s.num_waypoints} (${s.num_holding} holding)   Ground elev: ${s.ground_elevation_ft} ft MSL`,
-      `Max altitude: ${s.max_altitude_agl_ft} ft AGL (${s.max_altitude_msl_ft} ft MSL)   Max ground speed: ${s.max_ground_speed_kt} kt`,
-    ];
-    lines.forEach((l) => { pdf.text(l, m, y); y += 14; });
-    y += 8;
+      pdf.setFontSize(16);
+      pdf.text(result.name || "Air-taxi trajectory", m, y);
+      y += 22;
+      pdf.setFontSize(10);
+      const s = result.summary;
+      const lines = [
+        `Start: ${s.start}   Landing: ${s.landing}   Duration: ${s.duration_s} s`,
+        `Waypoints: ${s.num_waypoints} (${s.num_holding} holding)   Ground elev: ${s.ground_elevation_ft} ft MSL`,
+        `Max altitude: ${s.max_altitude_agl_ft} ft AGL (${s.max_altitude_msl_ft} ft MSL)   Max ground speed: ${s.max_ground_speed_kt} kt`,
+      ];
+      lines.forEach((l) => { pdf.text(l, m, y); y += 14; });
+      y += 8;
 
-    // 2D top-view map (satellite + altitude-coloured trajectory) via leaflet-image,
-    // which renders the Leaflet map (tiles + canvas vector layers) correctly.
-    if (trajMapRef.current) {
-      try {
-        const canvas = await new Promise((resolve, reject) =>
-          leafletImage(trajMapRef.current, (err, c) => (err ? reject(err) : resolve(c))),
-        );
-        drawAltitudeLegend(canvas, result.trajectory);
-        const img = canvas.toDataURL("image/png");
-        const h = (cw * canvas.height) / canvas.width;
-        if (y + h > pdf.internal.pageSize.getHeight() - m) { pdf.addPage(); y = m; }
-        pdf.addImage(img, "PNG", m, y, cw, h);
-        y += h + 14;
-      } catch {
-        /* map capture failed — skip the map figure, keep the rest of the report */
+      // 2D top-view map via leaflet-image. The library is unmaintained and can
+      // *hang* (never invoke its callback) on some layer setups, which would
+      // freeze the whole export — so race it against a timeout and skip the map
+      // figure if it doesn't finish in time.
+      if (trajMapRef.current) {
+        try {
+          const canvas = await Promise.race([
+            new Promise((resolve, reject) =>
+              leafletImage(trajMapRef.current, (err, c) => (err ? reject(err) : resolve(c))),
+            ),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("map capture timed out")), 8000),
+            ),
+          ]);
+          drawAltitudeLegend(canvas, result.trajectory);
+          const img = canvas.toDataURL("image/png");
+          const h = (cw * canvas.height) / canvas.width;
+          if (y + h > pdf.internal.pageSize.getHeight() - m) { pdf.addPage(); y = m; }
+          pdf.addImage(img, "PNG", m, y, cw, h);
+          y += h + 14;
+        } catch {
+          /* map capture failed or timed out — skip it, keep the rest of the report */
+        }
       }
+
+      // Profile charts — capture each independently so one failing chart can't
+      // abort the whole report.
+      for (const id of ["chart-alt", "chart-spd"]) {
+        try {
+          const img = await Plotly.toImage(id, { format: "png", width: 1000, height: 320 });
+          const h = cw * 0.32;
+          if (y + h > pdf.internal.pageSize.getHeight() - m) { pdf.addPage(); y = m; }
+          pdf.addImage(img, "PNG", m, y, cw, h);
+          y += h + 12;
+        } catch {
+          /* this chart couldn't be captured — skip it */
+        }
+      }
+
+      pdf.save(`${(result.name || "trajectory").replace(/\s+/g, "_")}.pdf`);
+    } catch (e) {
+      // Never fail silently — a swallowed rejection here is exactly what made the
+      // button look like it "did nothing".
+      alert(`Couldn't generate the PDF report: ${e?.message || e}`);
     }
-    for (const id of ["chart-alt", "chart-spd"]) {
-      const img = await Plotly.toImage(id, { format: "png", width: 1000, height: 320 });
-      const h = cw * 0.32;
-      if (y + h > pdf.internal.pageSize.getHeight() - m) { pdf.addPage(); y = m; }
-      pdf.addImage(img, "PNG", m, y, cw, h);
-      y += h + 12;
-    }
-    pdf.save(`${(result.name || "trajectory").replace(/\s+/g, "_")}.pdf`);
   };
 
   const hasResult = status.state === "ok" && result;
